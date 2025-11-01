@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta charset="utf-8">
+  <script src="camera_utils.js" crossorigin="anonymous"></script>
+  <script src="control_utils.js" crossorigin="anonymous"></script>
+  <script src="drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="face_mesh.js" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title></title>
+  <meta name="color-scheme" content="light dark" />
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css" />
+  
+  <!-- Material Symbols for Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f8f9fa;
+      --panel-2: #e9ecef;
+      --text: #212529;
+      --text-dim: #6c757d;
+      --border: #dee2e6;
+      --primary: #4361ee;
+      --primary-hover: #3f37c9;
+      --danger: #dc3545;
+      --success: #28a745;
+      --warning: #ffc107;
+      --border-radius: 12px;
+      --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --box-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+      --box-shadow-pressed: 0 2px 4px rgba(0, 0, 0, 0.16);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0a0e1a;
+      --panel: #1a1f2e;
+      --panel-2: #2a2f3e;
+      --text: #e0e7ff;
+      --text-dim: #94a3b8;
+      --border: #334155;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --danger: #f87171;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      --box-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.5);
+      --box-shadow-pressed: 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app-header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: var(--box-shadow);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: var(--transition);
+    }
+
+    .brand:hover {
+      color: var(--primary);
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      box-shadow: var(--box-shadow);
+    }
+
+    .chip {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: var(--box-shadow);
+    }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      margin: 0 20px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .segmented {
+      display: flex;
+      background: var(--panel-2);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .seg-item {
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .seg-item:hover,
+    .seg-item[aria-pressed="true"] {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      box-shadow: var(--box-shadow-pressed);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      background: var(--panel-2);
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      color: var(--text-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+    }
+
+    .icon-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .icon {
+      font-family: "Material Symbols Outlined";
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      border-radius: 50%;
+      box-shadow: var(--box-shadow);
+    }
+
+    .stage-wrap {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .stage-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      flex-shrink: 0;
+      box-shadow: var(--box-shadow);
+    }
+
+    .stage-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--bg);
+    }
+
+    .status-connected {
+      background-color: var(--success);
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3);
+    }
+
+    .status-disconnected {
+      background-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.3);
+    }
+
+    .status-connecting {
+      background-color: var(--warning);
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .timer {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 14px;
+      background: var(--panel-2);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .stage-tools {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+      white-space: nowrap;
+      box-shadow: var(--box-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--panel);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--box-shadow-pressed);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-dim);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      background: var(--panel-2);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      border-color: var(--primary);
+      box-shadow: var(--box-shadow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--primary-hover), var(--primary));
+      border-color: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #ef4444);
+      color: white;
+      border-color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #ef4444, var(--danger));
+      border-color: #ef4444;
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .btn-outline-primary {
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-outline-primary:hover {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+    }
+
+    .btn-outline-danger {
+      background: transparent;
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .btn-outline-danger:hover {
+      background: linear-gradient(135deg, var(--danger), #ef4444);
+      color: white;
+    }
+
+    .avatar-canvas {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      border-radius: var(--border-radius);
+    }
+    .output_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: 50%;
+    max-height: 50%;
+    border-radius: var(--border-radius);
+    }
+
+    .recording-indicator {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(248, 113, 113, 0.95);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+      box-shadow: var(--box-shadow-hover);
+      backdrop-filter: blur(10px);
+    }
+
+    .recording-indicator.active {
+      display: flex;
+    }
+
+    .blink {
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .assist-overlay {
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      right: 25px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 16px;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      z-index: 5;
+      box-shadow: var(--box-shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .stage-bottom {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      box-shadow: var(--box-shadow);
+    }
+
+    .progress {
+      flex: 1;
+      height: 6px;
+      background: var(--panel-2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-right: 20px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    #progressBar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+      width: 0%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+    }
+
+    .filters .chip {
+      background: var(--panel-2);
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-left: 12px;
+      box-shadow: var(--box-shadow);
+      font-weight: 500;
+    }
+
+    .panel {
+      width: 420px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      background: var(--panel);
+      flex-shrink: 0;
+      box-shadow: var(--box-shadow);
+    }
+
+    .dock-right {
+      display: flex;
+      gap: 6px;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .asr-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      background: var(--panel-2);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .msg {
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--bg);
+      box-shadow: var(--box-shadow);
+      transition: var(--transition);
+    }
+
+    .msg:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--box-shadow-hover);
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .user-message {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      border-left: 4px solid var(--primary);
+    }
+
+    .system-message {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-left: 4px solid var(--success);
+    }
+
+    .nav-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin: 0 -20px 20px -20px;
+      padding: 0 20px;
+      background: var(--panel-2);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-item {
+      flex: 1;
+    }
+
+    .nav-link {
+      flex: 1;
+      padding: 14px 12px;
+      border: none;
+      background: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      text-align: center;
+      transition: var(--transition);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(96, 165, 250, 0.1);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .form-control {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: var(--border-radius);
+      resize: vertical;
+      font-size: 14px;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2), var(--box-shadow-hover);
+      transform: translateY(-1px);
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .mb-3 {
+      margin-bottom: 16px;
+    }
+
+    .w-100 {
+      width: 100%;
+    }
+
+    .voice-record-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow-hover);
+      margin: 0 auto 12px;
+      border: none;
+      font-size: 28px;
+    }
+
+    .input_video {
+      display: none; /* 隐藏原始视频输入 */
+    }
+
+    .voice-record-btn:hover {
+      background: linear-gradient(135deg, var(--primary-hover), var(--primary));
+      transform: scale(1.05) translateY(-2px);
+    }
+
+    .voice-record-btn.recording-pulse {
+      background: linear-gradient(135deg, var(--danger), #ef4444);
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(248, 113, 113, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+    }
+
+    .voice-record-label {
+      text-align: center;
+      font-size: 14px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .dock {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .dock-inner {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .dock-left, .dock-center, .dock-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dock-left {
+      flex: 1;
+    }
+
+    .dock-center {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .dock-right {
+      justify-content: flex-end;
+    }
+
+    .kbd {
+      background: var(--panel-2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', Monaco, monospace;
+      color: var(--text-dim);
+      box-shadow: var(--box-shadow);
+    }
+
+    .video-size-control {
+      padding: 20px;
+      border-top: 1px solid var(--border);
+      background: var(--panel-2);
+      border-radius: 0 0 var(--border-radius) var(--border-radius);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-range {
+      width: 100%;
+      margin-top: 10px;
+      accent-color: var(--primary);
+      border-radius: 10px;
+      height: 6px;
+    }
+
+    .settings-panel {
+      padding: 24px;
+      background: var(--panel-2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .form-switch input[type="checkbox"] {
+      width: 2.5em;
+      height: 1.25em;
+      accent-color: var(--primary);
+      border-radius: 50px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stage-wrap {
+        flex-direction: column;
+      }
+      .panel {
+        width: 100%;
+        height: 45vh;
+      }
+      .dock-inner {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .dock-left, .dock-center, .dock-right {
+        flex: none;
+        justify-content: center;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-inner,
+      .dock-inner {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .stage-top,
+      .stage-bottom {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+      .progress {
+        margin-right: 0;
+        margin-bottom: 12px;
+        width: 100%;
+      }
+      .filters .chip {
+        margin-left: 0;
+        margin-top: 6px;
+      }
+      .nav-tabs {
+        flex-direction: column;
+      }
+      .nav-link {
+        flex: none;
+      }
+      .btn {
+        padding: 12px 24px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="app" id="app" data-state="idle" aria-live="polite">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand" href="#" aria-label="livetalking 首頁">
+          <span class="brand-mark" aria-hidden="true">L</span>
+          <span>livetalking</span>
+          <span class="chip">v1.0</span>
+        </a>
+
+        <div class="header-center">
+          <div class="filters" aria-label="交互設定">
+            <div class="segmented" role="group" aria-label="模式類型">
+              <button type="button" class="seg-item active" data-type="chat" aria-pressed="true">對話</button>
+              <button type="button" class="seg-item" data-type="tts" aria-pressed="false">朗讀</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button class="icon-btn" id="helpBtn" aria-label="說明與提示">
+            <span class="icon">help</span>
+          </button>
+          <div class="avatar" title="使用者頭像" aria-hidden="true"></div>
+          <button class="icon-btn" id="settingsBtn" aria-label="設定">
+            <span class="icon">settings</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="stage-wrap">
+      <!-- Stage -->
+      <section class="stage" aria-label="交互舞台">
+        <div class="stage-top">
+          <div class="stage-meta">
+            <span class="status-indicator status-disconnected" id="connection-status"></span>
+            <span id="status-text">未連接</span>
+            <span class="timer" id="timer">00:00</span>
+          </div>
+          <div class="stage-tools">
+            <button class="btn btn-ghost" id="calibrateBtn" title="視訊校準"><span class="icon">visibility</span>校準</button>
+            <button class="btn btn-ghost" id="toggleTranscriptBtn" aria-expanded="true"><span class="icon">sms</span>對話面板</button>
+          </div>
+        </div>
+
+        <div class="avatar-canvas" id="avatarCanvas">
+          <video id="video" autoplay playsinline></video>
+          <video class="input_video"></video>
+          <canvas class="output_canvas" width="640px" height="480px"></canvas>
+          <div class="recording-indicator" id="recording-indicator">
+            <div class="blink"></div>
+            <span>錄製中</span>
+          </div>
+          <div class="assist-overlay">
+            <div class="assist-tip">提示：按空白鍵暫停/繼續，M 靜音麥克風</div>
+          </div>
+        </div>
+
+        <div class="stage-bottom">
+          <div class="progress" id="progress"><span id="progressBar"></span></div>
+          <div class="filters">
+            <div class="chip">延遲目標 <strong>&lt; 800ms</strong></div>
+            <div class="chip">瀏覽器：Chrome/Safari/Firefox/Edge</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel -->
+      <aside class="panel" id="transcriptPanel" aria-label="即時交互紀錄面板">
+        <div class="panel-header">
+          <strong>交互紀錄</strong>
+          <div class="dock-right">
+            <button class="icon-btn" id="repeatBtn" title="重複請求（R）"><span class="icon">replay</span></button>
+            <button class="icon-btn" id="skipBtn" title="跳過（K）"><span class="icon">skip_next</span></button>
+            <button class="icon-btn" id="historyBtn" title="歷史紀錄"><span class="icon">history</span></button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="asr-container" id="chatLog">
+            <div class="msg system-message">
+              <div class="meta">系統 · 00:00</div>
+              <div>歡迎使用livetalking，請點擊「開始連接」。</div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <ul class="nav-tabs" id="interaction-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="chat-tab" type="button" role="tab" aria-controls="chat" aria-selected="true">對話模式</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tts-tab" type="button" role="tab" aria-controls="tts" aria-selected="false">朗讀模式</button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="interaction-tabs-content">
+            <!-- Chat Mode -->
+            <div class="tab-pane active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+              <div class="asr-container" id="chat-messages">
+                <!-- Messages appended via JS -->
+              </div>
+              
+              <form id="chat-form">
+                <div class="input-group">
+                  <textarea class="form-control" id="chat-message" rows="3" placeholder="輸入您想對數字人說的話..."></textarea>
+                  <button class="btn btn-primary" type="submit">
+                    <span class="icon">send</span>
+                  </button>
+                </div>
+              </form>
+              
+              <div class="voice-record-btn" id="voice-record-btn">
+                <span class="icon">mic</span>
+              </div>
+              <div class="voice-record-label">按住說話，鬆開發送</div>
+            </div>
+            
+            <!-- TTS Mode -->
+            <div class="tab-pane" id="tts" role="tabpanel" aria-labelledby="tts-tab">
+              <form id="echo-form">
+                <div class="mb-3">
+                  <label for="message" class="form-label">輸入要朗讀的文本</label>
+                  <textarea class="form-control" id="message" rows="6" placeholder="輸入您想讓數字人朗讀的文字..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <span class="icon">volume_up</span> 朗讀文本
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Dock -->
+    <div class="dock" role="toolbar" aria-label="控制列">
+      <div class="dock-inner">
+        <div class="dock-left">
+          <button class="btn btn-primary" id="start">
+            <span class="icon">play_arrow</span> 開始連接 <span class="kbd">S</span>
+          </button>
+          <button class="btn btn-danger" id="stop" style="display: none;">
+            <span class="icon">stop</span> 停止連接
+          </button>
+          <button class="btn btn-outline-primary" id="btn_start_record">
+            <span class="icon">fiber_manual_record</span> 開始錄製
+          </button>
+          <button class="btn btn-outline-danger" id="btn_stop_record" disabled>
+            <span class="icon">stop</span> 停止錄製
+          </button>
+        </div>
+        <div class="dock-center">
+          <button class="btn" id="pauseBtn" disabled><span class="icon">pause</span> 暫停 <span class="kbd">Space</span></button>
+          <button class="btn" id="muteBtn"><span class="icon">mic</span> 靜音麥克風 <span class="kbd">M</span></button>
+          <button class="btn" id="cameraBtn"><span class="icon">videocam</span> 切換鏡頭</button>
+          <button class="btn" id="tipsBtn"><span class="icon">lightbulb</span> 即時建議</button>
+        </div>
+        <div class="dock-right">
+          <button class="btn" id="deviceBtn"><span class="icon">tune</span> 裝置</button>
+          <button class="btn" id="shareBtn"><span class="icon">share</span> 分享</button>
+        </div>
+      </div>
+      
+      <!-- Video Size Control -->
+      <div class="video-size-control">
+        <label for="video-size-slider" class="form-label">視訊大小調節: <span id="video-size-value">100%</span></label>
+        <input type="range" class="form-range" id="video-size-slider" min="50" max="150" value="100">
+      </div>
+      
+      <!-- Settings -->
+      <div class="settings-panel">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="use-stun">
+          <label class="form-check-label" for="use-stun">使用STUN伺服器</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Made with ❤️ by Marstaos | Frontend & Performance Optimization</p>
+  </footer>
+
+  <!-- Hidden session ID -->
+  <input type="hidden" id="sessionid" value="0">
+
+  <!-- JavaScript (unchanged) -->
+  <script src="client.js"></script>
+  <script src="srs.sdk.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      // Video size slider
+      $('#video-size-slider').on('input', function() {
+        const value = $(this).val();
+        $('#video-size-value').text(value + '%');
+        $('#video').css('transform', `scale(${value / 100})`);
+      });
+
+      // Update connection status
+      function updateConnectionStatus(status) {
+        const statusIndicator = $('#connection-status');
+        const statusText = $('#status-text');
+        
+        statusIndicator.removeClass('status-connected status-disconnected status-connecting');
+        
+        switch(status) {
+          case 'connected':
+            statusIndicator.addClass('status-connected');
+            statusText.text('已連接');
+            break;
+          case 'connecting':
+            statusIndicator.addClass('status-connecting');
+            statusText.text('連接中...');
+            break;
+          case 'disconnected':
+          default:
+            statusIndicator.addClass('status-disconnected');
+            statusText.text('未連接');
+            break;
+        }
+      }
+      //face detection
+      const videoElement = document.getElementsByClassName('input_video')[0];
+      const canvasElement = document.getElementsByClassName('output_canvas')[0];
+      const canvasCtx = canvasElement.getContext('2d');
+
+      function onResults(results) {
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+            results.image, 0, 0, canvasElement.width, canvasElement.height);
+        if (results.multiFaceLandmarks) {
+          for (const landmarks of results.multiFaceLandmarks) {
+            drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION,
+                          {color: '#C0C0C070', lineWidth: 1});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE, {color: '#FF3030'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYEBROW, {color: '#FF3030'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_IRIS, {color: '#FF3030'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE, {color: '#30FF30'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYEBROW, {color: '#30FF30'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_IRIS, {color: '#30FF30'});
+          //   drawConnectors(canvasCtx, landmarks, FACEMESH_FACE_OVAL, {color: '#E0E0E0'});
+            drawConnectors(canvasCtx, landmarks, FACEMESH_LIPS, {color: '#E0E0E0'});
+          }
+        }
+        canvasCtx.restore();
+      }
+
+      const faceMesh = new FaceMesh({locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+      }});
+      faceMesh.setOptions({
+        selfieMode: true,
+        enableFaceGeometry: false,
+        maxNumFaces: 1,
+        refineLandmarks: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      faceMesh.onResults(onResults);
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await faceMesh.send({image: videoElement});
+        },
+        width: 640,
+        height: 480
+      });
+      // 关闭函数
+      function stopCamera() {
+        if (camera) {
+          camera.stop();  // 停止摄像头
+          camera = null;  // 释放引用
+        }
+      }
+      // Add chat message
+      function addChatMessage(message, type = 'user') {
+        const messagesContainer = $('#chat-messages').length ? $('#chat-messages') : $('#chatLog');
+        const messageClass = type === 'user' ? 'user-message' : 'system-message';
+        const sender = type === 'user' ? '您' : '數字人';
+        
+        const messageElement = $(`
+          <div class="msg ${messageClass}">
+            <div class="meta">${sender} · ${new Date().toLocaleTimeString('zh-TW', {hour: '2-digit', minute: '2-digit'})}</div>
+            <div>${message}</div>
+          </div>
+        `);
+        
+        messagesContainer.append(messageElement);
+        messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+      }
+
+      // Tab switching
+      $('#interaction-tabs .nav-link').click(function(e) {
+        e.preventDefault();
+        const target = $(this).attr('aria-controls');
+        $('#interaction-tabs .nav-link').removeClass('active').attr('aria-selected', 'false');
+        $(this).addClass('active').attr('aria-selected', 'true');
+        $('.tab-pane').removeClass('active');
+        $('#' + target).addClass('active');
+      });
+
+      // Start/Stop connection
+      $('#start').click(function() {
+        updateConnectionStatus('connecting');
+        if (typeof start === 'function') start();
+        $(this).hide();
+        $('#stop').show();
+        
+        let connectionCheckTimer = setInterval(function() {
+          const video = document.getElementById('video');
+          if (video.readyState >= 3 && video.videoWidth > 0) {
+            updateConnectionStatus('connected');
+            // camera.start();
+            clearInterval(connectionCheckTimer);
+          }
+        }, 2000);
+        
+        setTimeout(function() {
+          if (connectionCheckTimer) clearInterval(connectionCheckTimer);
+        }, 60000);
+      });
+
+      $('#stop').click(function() {
+        if (typeof stop === 'function') stop();
+        $(this).hide();
+        $('#start').show();
+        updateConnectionStatus('disconnected');
+        stopCamera();
+      });
+
+      // Recording
+      $('#btn_start_record').click(function() {
+        console.log('Starting recording...');
+        fetch('/record', {
+          body: JSON.stringify({
+            type: 'start_record',
+            sessionid: parseInt($('#sessionid').val()),
+          }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST'
+        }).then(response => {
+          if (response.ok) {
+            console.log('Recording started.');
+            $('#btn_start_record').prop('disabled', true);
+            $('#btn_stop_record').prop('disabled', false);
+            $('#recording-indicator').addClass('active');
+          } else {
+            console.error('Failed to start recording.');
+          }
+        }).catch(error => console.error('Error:', error));
+      });
+
+      $('#btn_stop_record').click(function() {
+        console.log('Stopping recording...');
+        fetch('/record', {
+          body: JSON.stringify({
+            type: 'end_record',
+            sessionid: parseInt($('#sessionid').val()),
+          }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST'
+        }).then(response => {
+          if (response.ok) {
+            console.log('Recording stopped.');
+            $('#btn_start_record').prop('disabled', false);
+            $('#btn_stop_record').prop('disabled', true);
+            $('#recording-indicator').removeClass('active');
+          } else {
+            console.error('Failed to stop recording.');
+          }
+        }).catch(error => console.error('Error:', error));
+      });
+
+      // Echo form
+      $('#echo-form').on('submit', function(e) {
+        e.preventDefault();
+        var message = $('#message').val().trim();
+        if (!message) return;
+        
+        console.log('Sending echo message:', message);
+        
+        fetch('/human', {
+          body: JSON.stringify({
+            text: message,
+            type: 'echo',
+            interrupt: true,
+            sessionid: parseInt($('#sessionid').val()),
+          }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST'
+        });
+        
+        $('#message').val('');
+        addChatMessage(`已發送朗讀請求: "${message}"`, 'system');
+      });
+
+      // Chat form
+      $('#chat-form').on('submit', function(e) {
+        e.preventDefault();
+        var message = $('#chat-message').val().trim();
+        if (!message) return;
+        
+        console.log('Sending chat message:', message);
+        
+        fetch('/human', {
+          body: JSON.stringify({
+            text: message,
+            type: 'chat',
+            interrupt: true,
+            sessionid: parseInt($('#sessionid').val()),
+          }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST'
+        });
+        
+        addChatMessage(message, 'user');
+        $('#chat-message').val('');
+      });
+
+      // Voice recording
+      let mediaRecorder;
+      let isRecording = false;
+      let recognition;
+      
+      const isSpeechRecognitionSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+      
+      if (isSpeechRecognitionSupported) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'zh-TW';
+        
+        recognition.onresult = function(event) {
+          let interimTranscript = '';
+          let finalTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+              $('#chat-message').val(interimTranscript);
+            }
+          }
+          
+          if (finalTranscript) {
+            $('#chat-message').val(finalTranscript);
+          }
+        };
+        
+        recognition.onerror = function(event) {
+          console.error('語音識別錯誤:', event.error);
+        };
+      }
+      
+      $('#voice-record-btn').on('mousedown touchstart', function(e) {
+        e.preventDefault();
+        startRecording();
+      }).on('mouseup mouseleave touchend', function() {
+        if (isRecording) {
+          stopRecording();
+        }
+      });
+      
+      function startRecording() {
+        if (isRecording) return;
+        
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = function(e) {
+              // Handle data if needed
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            
+            $('#voice-record-btn').addClass('recording-pulse');
+            
+            if (recognition) {
+              recognition.start();
+            }
+          })
+          .catch(function(error) {
+            console.error('無法存取麥克風:', error);
+            alert('無法存取麥克風，請檢查瀏覽器權限設定。');
+          });
+      }
+
+      function stopRecording() {
+        if (!isRecording) return;
+        
+        mediaRecorder.stop();
+        isRecording = false;
+        
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        
+        $('#voice-record-btn').removeClass('recording-pulse');
+        
+        if (recognition) {
+          recognition.stop();
+        }
+        
+        setTimeout(function() {
+          const recognizedText = $('#chat-message').val().trim();
+          if (recognizedText) {
+            fetch('/human', {
+              body: JSON.stringify({
+                text: recognizedText,
+                type: 'chat',
+                interrupt: true,
+                sessionid: parseInt($('#sessionid').val()),
+              }),
+              headers: { 'Content-Type': 'application/json' },
+              method: 'POST'
+            });
+            
+            addChatMessage(recognizedText, 'user');
+            $('#chat-message').val('');
+          }
+        }, 500);
+      }
+
+      // WebRTC hooks
+      if (typeof window.onWebRTCConnected === 'function') {
+        const originalOnConnected = window.onWebRTCConnected;
+        window.onWebRTCConnected = function() {
+          updateConnectionStatus('connected');
+          if (originalOnConnected) originalOnConnected();
+        };
+      } else {
+        window.onWebRTCConnected = function() {
+          updateConnectionStatus('connected');
+        };
+      }
+
+      if (typeof window.onWebRTCDisconnected === 'function') {
+        const originalOnDisconnected = window.onWebRTCDisconnected;
+        window.onWebRTCDisconnected = function() {
+          updateConnectionStatus('disconnected');
+          if (originalOnDisconnected) originalOnDisconnected();
+        };
+      } else {
+        window.onWebRTCDisconnected = function() {
+          updateConnectionStatus('disconnected');
+          
+        };
+      }
+
+      // SRS play function (if needed)
+      var sdk = null;
+
+      function startPlay() {
+        if (sdk) sdk.close();
+        
+        sdk = new SrsRtcWhipWhepAsync();
+        $('#video').prop('srcObject', sdk.stream);
+        
+        var host = window.location.hostname;
+        var url = "http://" + host + ":1985/rtc/v1/whep/?app=live&stream=livestream";
+        
+        sdk.play(url).then(function(session) {
+          console.log('WebRTC播放已啟動，會話ID:', session.sessionid);
+        }).catch(function(reason) {
+          sdk.close();
+          console.error('WebRTC播放失敗:', reason);
+        });
+      }
+    });
+  </script>
+
+
+
+</body>
+</html>
